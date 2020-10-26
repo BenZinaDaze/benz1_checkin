@@ -30,6 +30,6 @@ jobs:
         pip install -r requirements.txt
     - name: start
       run: |
-        python dg.py
+        python tsdm_dg.py.py
       env: 
         COOKIETS: ${{ secrets.COOKIETS }}
