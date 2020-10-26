@@ -1,4 +1,4 @@
-name: 签到
+name: 打工
 
 on: 
   release:
