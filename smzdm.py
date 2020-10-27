@@ -4,6 +4,7 @@
 @author : stark
 """
 import requests,os
+import time
 
 """
 请求头
@@ -14,7 +15,7 @@ DEFAULT_HEADERS = {
         'Accept-Language': 'zh-CN,zh;q=0.9',
         'Connection': 'keep-alive',
         'Host': 'zhiyou.smzdm.com',
-        'Referer': 'https://www.smzdm.com/',
+        'Referer': 'http://www.smzdm.com/qiandao/',
         'Sec-Fetch-Dest': 'script',
         'Sec-Fetch-Mode': 'no-cors',
         'Sec-Fetch-Site': 'same-site',
@@ -52,7 +53,7 @@ class SMZDM_Bot(object):
         """
         签到函数
         """
-        url = 'https://zhiyou.smzdm.com/user/checkin/jsonp_checkin'
+        url = 'https://zhiyou.smzdm.com/user/checkin/jsonp_checkin?callback=jQuery112409568846254764496_' + time.time() + '&_=' + time.time(),
         msg = self.session.get(url)
         if self.__json_check(msg):
             return msg.json()
@@ -77,7 +78,7 @@ class SMZDM_Bot(object):
 if __name__ == '__main__':
     sb = SMZDM_Bot()
     cookies = os.environ["COOKIES"]
-    SERVERCHAN_SECRETKEY = os.environ["SECRETKEY"]
+    SERVERCHAN_SECRETKEY = os.environ["SERVERCHAN_SECRETKEY"]
     sb.load_cookie_str(cookies)
     res = sb.checkin()
     print(res)
