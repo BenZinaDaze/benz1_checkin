@@ -57,6 +57,7 @@ class SMZDM_Bot(object):
         if self.__json_check(msg):
             return msg.json()
         return msg.content
+
     def push_to_wechat(text,desp,secretKey):
         """
         通过serverchan将消息推送到微信
@@ -75,9 +76,8 @@ class SMZDM_Bot(object):
 
 if __name__ == '__main__':
     sb = SMZDM_Bot()
-    # sb.load_cookie_str(config.TEST_COOKIE)
     cookies = os.environ["COOKIES"]
-    SERVERCHAN_SECRETKEY = os.environ["SERVERCHAN_SECRETKEY"]
+    SERVERCHAN_SECRETKEY = os.environ["SECRETKEY"]
     sb.load_cookie_str(cookies)
     res = sb.checkin()
     print(res)
