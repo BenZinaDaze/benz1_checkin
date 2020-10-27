@@ -5,7 +5,7 @@ on:
     types: [published]
   push:
     tags:
-    - 'v*'
+    - 'tsdmdgv*'
   #  branches: 
   #    - master
   schedule:
