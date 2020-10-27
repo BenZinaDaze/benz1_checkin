@@ -6,11 +6,8 @@ name: 什么值得买
 # events but only for the main branch
 on:
   push:
-    branches: [ main ]
     tags:
     - 'smzdmv*'
-  pull_request:
-    branches: [ main ]
   schedule:
     - cron: '0 1 * * *'
   watch:
