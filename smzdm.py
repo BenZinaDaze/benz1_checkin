@@ -78,11 +78,9 @@ class SMZDM_Bot(object):
 if __name__ == '__main__':
     sb = SMZDM_Bot()
     cookies = os.environ["COOKIES"]
-    SERVERCHAN_SECRETKEY = os.environ["SERVERCHAN_SECRETKEY"]
+    secretkey = os.environ["SERVERCHAN_SECRETKEY"]
     sb.load_cookie_str(cookies)
     res = sb.checkin()
     print(res)
-    resp = sb.push_to_wechat('什么值得买每日签到',
-                    str(res),
-                    SERVERCHAN_SECRETKEY)
+    resp = sb.push_to_wechat('什么值得买每日签到',str(res),secretkey)   
     print(resp)
