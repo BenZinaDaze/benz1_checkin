@@ -36,3 +36,8 @@ jobs:
         python smzdm.py > out.log
       env: 
         SMZDM_COOKIES: ${{ secrets.SMZDM_COOKIE }}
+    - name: Upload result file
+      uses: actions/upload-file@master
+      with:
+        name: result
+        path: ./*.log
