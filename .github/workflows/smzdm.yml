@@ -30,6 +30,7 @@ jobs:
         python smzdm.py > out.log
       env: 
         SMZDM_COOKIES: ${{ secrets.SMZDM_COOKIE }}
+        SECRETKEY: ${{ secrets.SECRETKEY }}
     - name: Upload result file
       uses: actions/upload-artifact@master
       with:
