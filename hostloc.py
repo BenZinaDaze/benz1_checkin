@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import binascii
 import configparser
-import datetime
 import logging
 import math
 import os
@@ -12,13 +12,9 @@ import sys
 import textwrap
 import time
 from random import randint
-from http.client import RemoteDisconnected
 
 import requests
-from croniter import croniter, croniter_range
 
-
-secret_log = '***'
 
 HOSTLOC_DIR = os.path.dirname(os.path.abspath(__file__))
 log_path = os.path.join(HOSTLOC_DIR, 'hostloc.log')
@@ -44,7 +40,7 @@ def get_ip(url=None, proxies=None):
     return requests.get(url, proxies=proxies).text
 
 
-accounts = []
+accounts = {}
 config_file = args.config
 if config_file and os.path.isfile(config_file):
     config = configparser.ConfigParser()
@@ -73,7 +69,7 @@ if config_file and os.path.isfile(config_file):
             }
             if proxies:
                 _account['proxies'] = proxies
-            accounts.append(_account)
+            accounts[username] = _account
 
 
 envs = dict(os.environ)
@@ -103,42 +99,16 @@ for key, value in envs.items():
             }
             if proxies:
                 _account['proxies'] = proxies
-            accounts.append(_account)
-    if key == 'hostloc_username':
-        _sep = ','
-        _user_list = os.getenv(key).split(_sep)
-        _passwd_list = os.getenv('hostloc_password').split(_sep)
-        if len(_user_list) == 0 or len(_user_list) != len(_passwd_list):
-            print('用户名个数为0或者用户名与密码个数不相等，请检查hostloc_username和hostloc_password')
-            sys.exit(1)
-        else:
-            for i in range(len(_user_list)):
-                _account = {
-                    'username': _user_list[i],
-                    'password': _passwd_list[i]
-                }
-                accounts.append(_account)
+            accounts[value] = _account
 
-onebyone = False
-hostloc_onebyone = envs.get('hostloc_onebyone', 'false').lower()
-if hostloc_onebyone == 'true':
-    onebyone = True
-else:
-    onebyone = False
 
 L7DFW = None
 
 
-def hostloc_checkin(account, strage='local', show_secret=False):
+def hostloc_checkin(account, strage='local'):
     username = account.get('username')
     password = account.get('password')
     proxies = account.get('proxies')
-
-    if show_secret:
-        username_log = username
-    else:
-        username_log = secret_log
-
     s = requests.session()
     cookies = {}
     global L7DFW
@@ -151,11 +121,7 @@ def hostloc_checkin(account, strage='local', show_secret=False):
     if strage == 'tencent':
         pass
     else:
-        if show_secret:
-            logger.debug('使用IP: %s', get_ip(proxies=proxies))
-        else:
-            logger.debug('使用IP: %s', secret_log)
-
+        logger.info('使用IP: {}'.format(get_ip(proxies=proxies)))
     login_url = 'https://www.hostloc.com/member.php?mod=logging&action=login&loginsubmit=yes&infloat=yes&lssubmit=yes&inajax=1'
     login_post = s.post(login_url, {'username': username, 'password': password}, proxies=proxies, cookies=cookies)
 
@@ -180,7 +146,7 @@ def hostloc_checkin(account, strage='local', show_secret=False):
     info_pattern = re.compile(r'>用户组: (\w+)</a>.*<em> 金钱: </em>(\d+)  &nbsp; </li>.*<li><em> 威望: </em>(\d+) </li>.*<li class=\"cl\"><em>积分: </em>(\d+) <span', flags=re.S)
     _current = re.search(info_pattern, user_info)
     if _current:
-        logger.info("用户: %s, 用户组: %s, 金钱: %s, 威望: %s, 积分: %s", username_log, _current.group(1), _current.group(2), _current.group(3), _current.group(4))
+        logger.info("用户: %s, 用户组: %s, 金钱: %s, 威望: %s, 积分: %s", username, _current.group(1), _current.group(2), _current.group(3), _current.group(4))
     else:
         raise LoginError("登陆出错")
 
@@ -188,7 +154,7 @@ def hostloc_checkin(account, strage='local', show_secret=False):
 
     _visit = 0
     visited_space_uids = []
-    random_visits = 10 + randint(5, 10)
+    random_visits = 10 + randint(0, 5)
     while True:
         if _visit == random_visits:
             break
@@ -197,31 +163,22 @@ def hostloc_checkin(account, strage='local', show_secret=False):
             continue
         space_text = s.get('https://www.hostloc.com/space-uid-%s.html' % space_uid, proxies=proxies, cookies=cookies).text
         visited_space_uids.append(space_uid)
-        time.sleep(randint(5, 10))
+        time.sleep(randint(1, 5))
         if '抱歉，您指定的用户空间不存在' in space_text:
-            if show_secret:
-                logger.debug('访问UID: %s，不存在', space_uid)
-            else:
-                logger.debug('访问UID: %s, 不存在', secret_log)
+            logger.debug('访问UID: %s，不存在', space_uid)
             continue
-        if show_secret:
-            logger.debug('访问UID: %s, 成功', space_uid)
-        else:
-            logger.debug('访问UID: %s, 成功', secret_log)
+        logger.debug('访问UID: %s, 成功', space_uid)
         _visit += 1
     new_user_info = s.get('https://www.hostloc.com/home.php?mod=spacecp&ac=credit', proxies=proxies, cookies=cookies).text
     _new = re.search(info_pattern, new_user_info)
-    logger.info("(之前)用户: %s, 用户组: %s, 金钱: %s, 威望: %s, 积分: %s", username_log, _current.group(1), _current.group(2), _current.group(3), _current.group(4))
-    logger.info("(现在)用户: %s, 用户组: %s, 金钱: %s, 威望: %s, 积分: %s", username_log, _new.group(1), _new.group(2), _new.group(3), _new.group(4))
+    logger.info("(之前)用户: %s, 用户组: %s, 金钱: %s, 威望: %s, 积分: %s", username, _current.group(1), _current.group(2), _current.group(3), _current.group(4))
+    logger.info("(现在)用户: %s, 用户组: %s, 金钱: %s, 威望: %s, 积分: %s", username, _new.group(1), _new.group(2), _new.group(3), _new.group(4))
 
 
-def hostloc_checkin_retry(account, retry=3, strage='local', show_secret=False):
+def hostloc_checkin_retry(account, retry=3, strage='local'):
     while True:
         try:
-            hostloc_checkin(account, strage='local', show_secret=show_secret)
-            break
-        except RemoteDisconnected:
-            logger.debug('拒绝连接')
+            hostloc_checkin(account, strage='local')
             break
         except Exception as e:
             logger.exception(e)
@@ -230,16 +187,14 @@ def hostloc_checkin_retry(account, retry=3, strage='local', show_secret=False):
                 break
             retry -= 1
             if strage == 'tencent':
-                n = 10
-                logger.debug('等待%s秒重试', n)
-                time.sleep(n)
+                logger.debug('等待10秒重试')
+                time.sleep(10)
             else:
-                n = 20
-                logger.debug('等待%s秒重试', n)
-                time.sleep(n)
+                logger.debug('等待20秒重试')
+                time.sleep(20)
 
 
-def start(interval=None, log_to_file=True, strage='local', show_secret=False, onebyone=False):
+def start(interval=None, log_to_file=True, strage='local'):
     strages = ['local', 'travis', 'tencent']
     if strage not in strages:
         strage = 'local'
@@ -251,63 +206,18 @@ def start(interval=None, log_to_file=True, strage='local', show_secret=False, on
     if strage == 'tencent':
         pass
     else:
-        if show_secret:
-            logger.debug('本机IP: %s', get_ip())
-        else:
-            logger.debug('本机IP: %s', secret_log)
-
-    logger.debug('onebyone: %s', onebyone)
-    if onebyone:
-        user_length = len(accounts)
-        cron_match = None
-        with open('.github/workflows/hostloc.yml', 'r') as f:
-            cron_match = re.search(r"- cron: '(.*)'", f.read())
-
-        if cron_match:
-            cronsetting = cron_match.group(1)
-            now = datetime.datetime.now()
-            start_dt = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
-            end_dt = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
-            cronlist = list(croniter_range(start_dt, end_dt, cronsetting))
-
-            for i in enumerate(cronlist):
-                num, dt = i
-                if num == user_length:
-                    break
-                elif now < dt:
-                    logger.debug('正在执行第%s个任务...', num)
-                    hostloc_checkin_retry(accounts[num - 1], retry=3, strage=strage, show_secret=show_secret)
-                    logger.debug('第%s个任务完成...', num)
-                    break
-                elif dt == cronlist[-1]:
-                    _first = True
-                    _wait_time = interval or 5 * 60
-                    for account in accounts[num:]:
-                        if not _first:
-                            logger.debug('等待%s分钟处理下一个任务', _wait_time // 60)
-                            time.sleep(int(_wait_time))
-                        _first = False
-                        hostloc_checkin_retry(account, retry=3, strage=strage, show_secret=show_secret)
-                    logger.info('========= 今日任务完成 ==========')
-    else:
-        _first = True
-        _wait_time = interval or 5 * 60
-        for account in accounts:
-            if not _first:
-                logger.debug('等待%s分钟处理下一个任务', _wait_time // 60)
-                time.sleep(int(_wait_time))
-            _first = False
-            hostloc_checkin_retry(account, retry=3, strage=strage, show_secret=show_secret)
-        logger.info('========= 今日任务完成 ==========')
-
-class LoginError(Exception):
-    pass
-
-def main_handler(event, context):
-    return start(interval=60, log_to_file=False, strage='tencent', show_secret=True, onebyone=False)
+        logger.debug('本机IP: %s', get_ip())
+    _first = True
+    _wait_time = interval or 3 * 60
+    for account in accounts.values():
+        if not _first:
+            logger.debug('等待%s分钟处理下一个任务', _wait_time // 60)
+            time.sleep(int(_wait_time))
+        _first = False
+        hostloc_checkin_retry(account, retry=3, strage=strage)
+    logger.info('========= 今日任务完成 ==========')
 
 
-# AES
 def append_PKCS7_padding(s):
     """return s padded to a multiple of 16-bytes by PKCS7 padding"""
     numpads = 16 - (len(s)%16)
@@ -946,5 +856,13 @@ def toNumbers(secret):
 
         return text
 
+
+class LoginError(Exception):
+    pass
+
+def main_handler(event, context):
+    return start(interval=60, log_to_file=False, strage='tencent')
+
+
 if __name__ == '__main__':
-    start(log_to_file=False, show_secret=False, onebyone=onebyone)
+    start()

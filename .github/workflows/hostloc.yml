@@ -29,9 +29,8 @@ jobs:
       run: |
         python hostloc.py
       env: 
-        hostloc_username: ${{ secrets.hostloc_username }}
-        hostloc_password: ${{ secrets.hostloc_password }}
-        hostloc_onebyone: false
+        hostloc_username_1: ${{ secrets.hostloc_username }}
+        hostloc_password_1: ${{ secrets.hostloc_password }}
     - name: Upload result file
       uses: actions/upload-artifact@master
       with:
