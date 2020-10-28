@@ -4,17 +4,11 @@
 name: 签到
 
 on: 
-  release:
-    types: [published]
-  push:
-    tags:
-    - 'tsdmqdv*'
-  #  branches: 
-  #    - master
   schedule:
     - cron: '0 */4 * * *'
   watch:
     types: [started]
+  workflow_dispatch:
     
 jobs:
   build:

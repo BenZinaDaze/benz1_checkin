@@ -4,17 +4,11 @@
 name: 什么值得买签到
 
 on: 
-  release:
-    types: [published]
-  push:
-    tags:
-      - 'v*'
-    branches: 
-      - main
   schedule:
     - cron: '0 1 * * *'
   watch:
     types: [started]
+  workflow_dispatch:
     
 jobs:
   build:

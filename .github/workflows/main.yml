@@ -1,17 +1,11 @@
 name: 打工
 
 on: 
-  release:
-    types: [published]
-  push:
-    tags:
-    - 'tsdmdgv*'
-  #  branches: 
-  #    - master
   schedule:
     - cron: '0 */1 * * *'
   watch:
     types: [started]
+  workflow_dispatch:
    
 jobs:
   build:
