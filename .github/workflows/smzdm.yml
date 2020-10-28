@@ -12,7 +12,7 @@ on:
     branches: 
       - main
   schedule:
-    - cron: '* 1 * * *'
+    - cron: '0 1 * * *'
   watch:
     types: [started]
     
@@ -37,7 +37,7 @@ jobs:
       env: 
         SMZDM_COOKIES: ${{ secrets.SMZDM_COOKIE }}
     - name: Upload result file
-      uses: actions/upload-file@master
+      uses: actions/upload-artifact@master
       with:
         name: result
         path: ./*.log
