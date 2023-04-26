@@ -19,8 +19,10 @@ def q():
     }
     for i in range(6):
         res1 = requests.post(url=url, headers=headers, data=data1).text
+        print(res1)
     for i in range(1):
         res2 = requests.post(url=url, headers=headers, data=data2).text
+        print(res2)
 
 
 def main_handler(event, context):
