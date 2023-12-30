@@ -3,7 +3,7 @@ boto3
 awscli
 pysocks
 requests
-lxml=4.5.0
+lxml==4.5.0
 cfscrape
 rsa
 beautifulsoup4
